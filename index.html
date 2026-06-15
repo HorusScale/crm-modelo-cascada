@@ -12,7 +12,7 @@
   :root{
     --bg:#0e1014; --bg2:#14171d; --panel:#181c24; --panel2:#1e232c;
     --line:#2a313c; --line2:#363f4d;
-    --txt:#e8ebf1; --muted:#9aa6b6; --muted2:#6f7b8c;
+    --txt:#eef1f6; --muted:#aab5c4; --muted2:#8c98aa;
     --gold:#FFC22D; --gold-dim:#9b7716;
     --blue:#4ea1ff; --green:#41d18a; --red:#ff6b6b; --violet:#b48bff;
     --radius:14px; --radius-sm:9px;
@@ -143,16 +143,21 @@
   .section-title{margin:0 0 4px;font-size:20px;font-weight:800;letter-spacing:-.01em}
   .section-sub{color:var(--muted);font-size:14px;margin-bottom:18px}
   .map{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px}
-  .node{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px;cursor:pointer;transition:var(--t);position:relative}
-  .node:hover{border-color:var(--gold-dim);transform:translateY(-2px)}
-  .node.active{border-color:var(--gold);box-shadow:0 0 0 3px rgba(255,194,45,.12)}
-  .node .lvl{font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--muted2)}
-  .node h4{margin:5px 0 0;font-size:14.5px;font-weight:700}
+  .node{background:#1c222c;border:1px solid var(--line2);border-radius:12px;padding:13px;cursor:pointer;transition:var(--t);position:relative}
+  .node:hover{border-color:var(--gold);transform:translateY(-2px);background:#222936}
+  .node.active{border-color:var(--gold);box-shadow:0 0 0 3px rgba(255,194,45,.14);background:#222936}
+  .node .lvl{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:#b6c0cd}
+  .node h4{margin:5px 0 0;font-size:14.5px;font-weight:700;color:var(--txt)}
   .node.l-principio{border-left:3px solid var(--gold)}
   .node.l-estructura{border-left:3px solid var(--violet)}
   .node.l-navegacion{border-left:3px solid var(--blue)}
   .node.l-resultados{border-left:3px solid var(--green)}
   .node.l-roles{border-left:3px solid #e08b5a}
+  .node.l-principio .lvl{color:var(--gold)}
+  .node.l-estructura .lvl{color:#c8a9ff}
+  .node.l-navegacion .lvl{color:#86c2ff}
+  .node.l-resultados .lvl{color:#5fdaa1}
+  .node.l-roles .lvl{color:#efaa7c}
 
   .defpanel{position:sticky;bottom:14px;margin-top:16px;background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line2);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);min-height:92px}
   .defpanel .dlvl{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--gold)}
