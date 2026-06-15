@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Modelo de CRM en Cascada · Horus Scale</title>
+<meta name="description" content="Modelo conceptual de los CRMs de Horus Scale: flujo cerrado, cascada gateada (navegación y resultados), recursividad por fase y roles componibles." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0e1014; --bg2:#14171d; --panel:#181c24; --panel2:#1e232c;
+    --line:#2a313c; --line2:#363f4d;
+    --txt:#e8ebf1; --muted:#9aa6b6; --muted2:#6f7b8c;
+    --gold:#FFC22D; --gold-dim:#9b7716;
+    --blue:#4ea1ff; --green:#41d18a; --red:#ff6b6b; --violet:#b48bff;
+    --radius:14px; --radius-sm:9px;
+    --shadow:0 10px 40px rgba(0,0,0,.45);
+    --t:.45s cubic-bezier(.4,0,.2,1);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:radial-gradient(1200px 600px at 70% -10%, #1a2030 0%, var(--bg) 55%) fixed;
+    color:var(--txt); font-family:'Inter',system-ui,sans-serif;
+    line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--gold)}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 22px 80px}
+
+  /* ---------- header ---------- */
+  header.top{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:8px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--gold),#e0a000);display:grid;place-items:center;color:#1a1205;font-weight:800;font-size:20px;box-shadow:0 6px 18px rgba(255,194,45,.25)}
+  h1{font-size:clamp(22px,3.4vw,32px);font-weight:800;letter-spacing:-.02em;margin:0}
+  .sub{color:var(--muted);font-size:14px;margin-top:2px}
+  .tag{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);background:rgba(255,194,45,.08);border:1px solid rgba(255,194,45,.25);padding:3px 9px;border-radius:999px;margin-bottom:10px}
+
+  .lead{max-width:760px;color:var(--muted);font-size:15.5px;margin:18px 0 26px}
+  .lead b{color:var(--txt);font-weight:600}
+
+  /* ---------- tour bar ---------- */
+  .tourbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line2);border-radius:var(--radius);padding:12px 14px;margin-bottom:22px;position:sticky;top:8px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+  .btn{appearance:none;border:1px solid var(--line2);background:var(--panel2);color:var(--txt);font:inherit;font-weight:600;font-size:13.5px;padding:9px 15px;border-radius:10px;cursor:pointer;transition:var(--t);display:inline-flex;align-items:center;gap:7px}
+  .btn:hover{border-color:var(--gold-dim);background:#232a34}
+  .btn.primary{background:linear-gradient(135deg,var(--gold),#e9ad12);color:#241803;border:none;box-shadow:0 6px 16px rgba(255,194,45,.22)}
+  .btn.primary:hover{filter:brightness(1.06)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .stepcount{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+  .progress{flex:1;min-width:120px;height:5px;background:var(--line);border-radius:99px;overflow:hidden}
+  .progress > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold),#e9ad12);transition:width .5s ease}
+
+  /* ---------- narration ---------- */
+  .narration{background:linear-gradient(180deg,rgba(255,194,45,.07),rgba(255,194,45,0));border:1px solid rgba(255,194,45,.28);border-radius:var(--radius);padding:16px 18px;margin-bottom:22px;display:none}
+  .narration.on{display:block;animation:fade .5s ease}
+  .narration h3{margin:0 0 5px;font-size:16px;color:var(--gold)}
+  .narration p{margin:0;color:var(--txt);font-size:14.5px}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  /* ---------- stage ---------- */
+  .stagewrap{background:var(--bg2);border:1px solid var(--line);border-radius:18px;padding:20px 18px;position:relative;overflow:hidden}
+  .stage-label{position:absolute;top:12px;left:16px;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2)}
+
+  /* principle banner */
+  .principle{display:flex;align-items:center;gap:12px;justify-content:center;margin:22px auto 6px;padding:10px 18px;border:1px dashed var(--line2);border-radius:99px;width:max-content;max-width:100%;transition:var(--t)}
+  .principle .dot{width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 0 rgba(255,194,45,.5)}
+  .principle b{color:var(--txt);font-weight:700;cursor:pointer}
+  .principle span{color:var(--muted);font-size:13px}
+  .hl .principle, .principle.hl{border-color:var(--gold);box-shadow:0 0 0 3px rgba(255,194,45,.1)}
+
+  /* cascade of colas */
+  .flow{display:flex;align-items:stretch;gap:10px;overflow-x:auto;padding:18px 4px 8px;scrollbar-width:thin}
+  .cola{flex:0 0 150px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px;display:flex;flex-direction:column;gap:8px;transition:var(--t);position:relative}
+  .cola.hl{border-color:var(--gold);box-shadow:0 0 0 3px rgba(255,194,45,.12)}
+  .cola.dim{opacity:.35}
+  .cola h4{margin:0;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:6px}
+  .cola h4 .badge{font-size:11px;font-weight:700;color:#101319;background:var(--muted);border-radius:99px;min-width:18px;height:18px;display:grid;place-items:center;padding:0 5px}
+  .cola.panorama{flex:0 0 168px;background:linear-gradient(180deg,#1c2330,#161b24);border-style:solid;border-color:var(--line2)}
+  .cola .tabsflag{font-size:10px;color:var(--gold);font-weight:700;letter-spacing:.04em;cursor:pointer;border:1px solid rgba(255,194,45,.3);border-radius:6px;padding:1px 6px}
+  .cola .tabsflag:hover{background:rgba(255,194,45,.1)}
+  .arrow{flex:0 0 16px;display:grid;place-items:center;color:var(--muted2);font-size:18px;align-self:center}
+
+  .chip{background:var(--panel2);border:1px solid var(--line2);border-radius:8px;padding:7px 9px;font-size:12.5px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:7px;transition:transform .25s ease,border-color .25s ease,background .25s}
+  .chip:hover{border-color:var(--gold-dim);background:#272e39}
+  .chip .av{width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#3a4453,#2a3240);font-size:10px;display:grid;place-items:center;color:var(--txt);font-weight:700;flex:0 0 18px}
+  .chip.mine .av{background:linear-gradient(135deg,var(--gold),#cf9a12);color:#1a1205}
+  .chip.moving{animation:hop .7s ease}
+  @keyframes hop{0%{transform:translateY(0) scale(1)}40%{transform:translateY(-14px) scale(1.06);border-color:var(--gold)}100%{transform:translateY(0) scale(1)}}
+  .chip.enter{animation:enter .6s ease}
+  @keyframes enter{from{opacity:0;transform:translateY(10px) scale(.9)}to{opacity:1;transform:none}}
+  .empty{color:var(--muted2);font-size:11.5px;font-style:italic;padding:4px 2px}
+
+  /* phase zoom (fractal) */
+  .zoom{margin-top:14px;border:1px solid var(--gold-dim);border-radius:var(--radius-sm);background:rgba(255,194,45,.04);padding:12px;display:none}
+  .zoom.on{display:block;animation:fade .5s ease}
+  .zoom .ztitle{font-size:12px;color:var(--gold);font-weight:700;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+  .zoom .ztitle .x{cursor:pointer;color:var(--muted);font-weight:600}
+  .zflow{display:flex;gap:8px;align-items:center;overflow-x:auto;padding-bottom:4px}
+  .subcola{flex:0 0 130px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px}
+  .subcola h5{margin:0 0 6px;font-size:11.5px;font-weight:700}
+  .subcola.vista{background:linear-gradient(180deg,#1c2330,#161b24);border-color:var(--line2)}
+
+  /* action card / cascada de resultados */
+  .scrim{position:fixed;inset:0;background:rgba(6,8,11,.6);backdrop-filter:blur(2px);display:none;z-index:40}
+  .scrim.on{display:block;animation:fade .3s ease}
+  .card{position:fixed;z-index:50;top:50%;left:50%;transform:translate(-50%,-48%);width:min(440px,92vw);background:var(--panel);border:1px solid var(--line2);border-radius:16px;box-shadow:var(--shadow);padding:18px;display:none}
+  .card.on{display:block;animation:pop .35s cubic-bezier(.2,.9,.3,1.2)}
+  @keyframes pop{from{opacity:0;transform:translate(-50%,-44%) scale(.96)}to{opacity:1;transform:translate(-50%,-48%) scale(1)}}
+  .card .crow{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+  .card .ctag{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);font-weight:700}
+  .card .cx{cursor:pointer;color:var(--muted);font-size:20px;line-height:1}
+  .card h3{margin:2px 0 2px;font-size:18px}
+  .card .who{color:var(--muted);font-size:13px;margin-bottom:14px}
+  .qstep{margin-bottom:13px}
+  .qstep .q{font-size:13px;color:var(--muted);margin-bottom:7px}
+  .qstep .q b{color:var(--txt)}
+  .opts{display:flex;flex-direction:column;gap:7px}
+  .opt{text-align:left;border:1px solid var(--line2);background:var(--panel2);color:var(--txt);font:inherit;font-size:13.5px;font-weight:500;padding:10px 12px;border-radius:9px;cursor:pointer;transition:var(--t);display:flex;align-items:center;gap:9px}
+  .opt:hover{border-color:var(--gold);background:#272e39;transform:translateX(2px)}
+  .opt .k{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;text-transform:uppercase;letter-spacing:.04em}
+  .k.av{background:rgba(65,209,138,.15);color:var(--green)}
+  .k.enc{background:rgba(78,161,255,.15);color:var(--blue)}
+  .k.term{background:rgba(255,107,107,.15);color:var(--red)}
+  .k.park{background:rgba(180,139,255,.15);color:var(--violet)}
+  .card .note{font-size:11.5px;color:var(--muted2);margin-top:6px;border-top:1px solid var(--line);padding-top:9px}
+
+  /* role / zone switcher */
+  .roles{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:18px}
+  .roles .rl{font-size:12px;color:var(--muted2);margin-right:4px;font-weight:600}
+  .role{border:1px solid var(--line2);background:var(--panel2);color:var(--muted);font:inherit;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:99px;cursor:pointer;transition:var(--t)}
+  .role:hover{color:var(--txt);border-color:var(--gold-dim)}
+  .role.active{background:rgba(255,194,45,.12);border-color:var(--gold);color:var(--gold)}
+  .role.add{border-style:dashed}
+  .zonenote{margin-top:10px;font-size:13px;color:var(--muted);min-height:20px;transition:var(--t)}
+  .zonenote b{color:var(--txt)}
+
+  /* ---------- concept map grid ---------- */
+  .section-title{margin:42px 0 4px;font-size:20px;font-weight:800;letter-spacing:-.01em}
+  .section-sub{color:var(--muted);font-size:14px;margin-bottom:18px}
+  .map{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px}
+  .node{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 13px;cursor:pointer;transition:var(--t);position:relative}
+  .node:hover{border-color:var(--gold-dim);transform:translateY(-2px)}
+  .node.active{border-color:var(--gold);box-shadow:0 0 0 3px rgba(255,194,45,.12)}
+  .node .lvl{font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--muted2)}
+  .node h4{margin:5px 0 0;font-size:14.5px;font-weight:700}
+  .node.l-principio{border-left:3px solid var(--gold)}
+  .node.l-estructura{border-left:3px solid var(--violet)}
+  .node.l-navegacion{border-left:3px solid var(--blue)}
+  .node.l-resultados{border-left:3px solid var(--green)}
+  .node.l-roles{border-left:3px solid #e08b5a}
+
+  /* definition panel */
+  .defpanel{position:sticky;bottom:14px;margin-top:16px;background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line2);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);min-height:92px}
+  .defpanel .dlvl{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--gold)}
+  .defpanel h3{margin:4px 0 6px;font-size:17px}
+  .defpanel p{margin:0;color:var(--muted);font-size:14px}
+  .defpanel p b{color:var(--txt);font-weight:600}
+  .defpanel .ex{margin-top:9px;font-size:12.5px;color:var(--muted2)}
+  .defpanel .ex b{color:var(--blue);font-weight:600}
+  .defpanel.placeholder p{color:var(--muted2);font-style:italic}
+
+  footer{margin-top:46px;color:var(--muted2);font-size:12.5px;text-align:center;line-height:1.7}
+  footer b{color:var(--muted)}
+
+  @media (max-width:640px){
+    .cola{flex-basis:130px}
+    .narration,.tourbar{position:static}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <span class="tag">Horus Scale · Modelo de producto</span>
+      <div class="brand">
+        <div class="logo">H</div>
+        <div>
+          <h1>El CRM como cascada gateada</h1>
+          <div class="sub">Modelo conceptual de los operativos comerciales de Horus — NIMED · ADO · JD Emirates</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <p class="lead">
+    Todos nuestros CRMs comparten una misma forma. El usuario <b>registra hechos</b>, nunca elige el estado;
+    el sistema <b>deriva</b> todo lo demás. Esa idea se materializa en una estructura que se repite a cada escala:
+    la <b>cascada gateada</b>. Esta página la recorre paso a paso y deja cada término clicable abajo.
+  </p>
+
+  <!-- TOUR BAR -->
+  <div class="tourbar">
+    <button class="btn primary" id="tourBtn">▶ Recorrido guiado</button>
+    <button class="btn" id="prevBtn" disabled>← Anterior</button>
+    <button class="btn" id="nextBtn" disabled>Siguiente →</button>
+    <span class="stepcount" id="stepCount"></span>
+    <div class="progress"><i id="progBar"></i></div>
+  </div>
+
+  <div class="narration" id="narration">
+    <h3 id="narrTitle"></h3>
+    <p id="narrText"></p>
+  </div>
+
+  <!-- STAGE -->
+  <div class="stagewrap" id="stage">
+    <span class="stage-label">Modelo en vivo</span>
+
+    <div class="principle" id="principle">
+      <span class="dot"></span>
+      <b data-node="flujo">Flujo cerrado</b>
+      <span>el usuario registra hechos · el sistema deriva el estado</span>
+    </div>
+
+    <div class="flow" id="flow"><!-- colas injected --></div>
+
+    <div class="zoom" id="zoom">
+      <div class="ztitle">
+        <span>🔍 Zoom a una fase con tabs — la misma forma, un nivel abajo (recursiva)</span>
+        <span class="x" id="zoomX">cerrar ✕</span>
+      </div>
+      <div class="zflow" id="zflow"></div>
+    </div>
+
+    <div class="roles">
+      <span class="rl">Zonas por rol:</span>
+      <button class="role active" data-role="operador">Operador</button>
+      <button class="role" data-role="manager">Manager / Supervisor</button>
+      <button class="role" data-role="ceo">CEO / Director</button>
+      <button class="role" data-role="admin">Admin</button>
+    </div>
+    <div class="zonenote" id="zonenote"></div>
+  </div>
+
+  <!-- CONCEPT MAP -->
+  <div class="section-title">Mapa conceptual — el vocabulario</div>
+  <div class="section-sub">Una palabra, un significado. Toca cualquier término para ver su definición.</div>
+  <div class="map" id="map"><!-- nodes injected --></div>
+
+  <div class="defpanel placeholder" id="defpanel">
+    <div class="dlvl" id="defLvl">Glosario</div>
+    <h3 id="defTitle">Toca un término del mapa o un elemento del modelo</h3>
+    <p id="defText">Cada concepto se define una sola vez. El recorrido guiado los va iluminando en orden; aquí puedes explorarlos libremente.</p>
+    <div class="ex" id="defEx"></div>
+  </div>
+
+  <footer>
+    <b>Horus Scale</b> · Modelo agnóstico de herramienta (Airtable+Noloco · Directus+Nuxt · Supabase) ·
+    Destilado de NIMED, CRM interno BOS, ADO y JD Emirates.<br>
+    Pendiente de cerrar con Álvaro: nombre y poderes del tier <i>Manager / Supervisor</i>.
+  </footer>
+
+</div>
+
+<!-- ACTION CARD (Cascada de Resultados) -->
+<div class="scrim" id="scrim"></div>
+<div class="card" id="card">
+  <div class="crow">
+    <span class="ctag">Cascada de Resultados · dentro de una acción</span>
+    <span class="cx" id="cardX">✕</span>
+  </div>
+  <h3 id="cardAction"></h3>
+  <div class="who" id="cardWho"></div>
+  <div class="qstep">
+    <div class="q" id="cardQ"></div>
+    <div class="opts" id="cardOpts"></div>
+  </div>
+  <div class="note">El operario elige el <b>resultado</b>; el sistema dispara la transición y mueve el objeto. Nunca toca el estado a mano.</div>
+</div>
+
+<script>
+/* ============================================================
+   DATA — el modelo
+   ============================================================ */
+const COLAS = [
+  {id:'bandeja', name:'Bandeja',     sub:'sin asignar', tabs:false,
+   objs:[{n:'Diego',mine:false},{n:'Elena',mine:false}]},
+  {id:'f1', name:'1 · Captación',    sub:'estado',       tabs:false,
+   objs:[{n:'Ana',mine:true}]},
+  {id:'f2', name:'2 · Contacto',     sub:'estado',       tabs:false,
+   objs:[{n:'Bruno',mine:true}]},
+  {id:'f3', name:'3 · Propuesta',    sub:'estado',       tabs:true,
+   objs:[{n:'Carla',mine:true}]},
+  {id:'f4', name:'4 · Cierre',       sub:'estado',       tabs:false,
+   objs:[]},
+];
+// acción disponible en cada estado + su cascada de resultados
+const ACTIONS = {
+  bandeja:{action:'Tomar de la bandeja', q:'Asignarte el caso',
+    opts:[{k:'av',kl:'avance',t:'Me lo asigno → pasa a Captación',to:'f1'}]},
+  f1:{action:'Registrar contacto', q:'¿Contactaste con el lead?',
+    opts:[
+      {k:'av',kl:'avance',t:'Sí, cualifica → Contacto',to:'f2'},
+      {k:'enc',kl:'encadenado',t:'No contesta → crea seguimiento',to:'f1'},
+      {k:'term',kl:'terminal',t:'No cualifica → descartar (exige motivo)',to:null},
+      {k:'park',kl:'aparcado',t:'Más adelante → largo plazo',to:null},
+    ]},
+  f2:{action:'Registrar contacto', q:'¿Avanza hacia propuesta?',
+    opts:[
+      {k:'av',kl:'avance',t:'Sí → Propuesta',to:'f3'},
+      {k:'enc',kl:'encadenado',t:'Seguir trabajándolo → seguimiento',to:'f2'},
+      {k:'term',kl:'terminal',t:'Se cae → descartar (motivo)',to:null},
+    ]},
+  f3:{action:'Presentar propuesta', q:'¿Qué dijo el cliente?',
+    opts:[
+      {k:'av',kl:'avance',t:'Aprueba → Cierre',to:'f4'},
+      {k:'enc',kl:'encadenado',t:'Pide cambios → nueva propuesta',to:'f3'},
+      {k:'park',kl:'aparcado',t:'Lo piensa → largo plazo',to:null},
+    ]},
+  f4:{action:'Registrar cierre', q:'Cerrar la operación',
+    opts:[{k:'av',kl:'avance',t:'Ganada (terminal)',to:null}]},
+};
+// sub-colas de la fase con tabs (mini-cascada → vista general)
+const SUBCOLAS = [
+  {name:'Por preparar', objs:['Carla']},
+  {name:'Enviada',      objs:[]},
+  {name:'En decisión',  objs:[]},
+  {name:'▦ Vista general de fase', objs:['Carla'], vista:true},
+];
+
+const NODES = {
+  flujo:{lvl:'Principio', cls:'l-principio', t:'Flujo cerrado',
+    d:'El principio que gobierna todo. El usuario <b>registra hechos</b> (una llamada, un pago); <b>nunca elige el estado</b>. El sistema deriva el estado, las colas y las alertas a partir de los hechos.',
+    ex:'Si la etapa se mueve a mano, el kanban miente y el reporting muere. El estado es read-only.'},
+  cascada:{lvl:'Estructura', cls:'l-estructura', t:'Cascada gateada',
+    d:'La estructura que implementa el flujo cerrado. Una secuencia donde cada paso está <b>gateado</b> (no aparece hasta cumplir su condición) y el avance lo <b>dispara un hecho</b> (trigger), nunca una elección libre.',
+    ex:'Es recursiva: la misma forma se repite a escala de pipeline y a escala de fase.'},
+  pipeline:{lvl:'Modelo lógico', cls:'l-estructura', t:'Pipeline / máquina de estados',
+    d:'El modelo lógico del que las dos cascadas son proyección. Los <b>estados</b> son nodos reales del flujo, <b>derivados y read-only</b>.',
+    ex:'No confundir estado con condición (campo derivado) ni con alerta.'},
+  navegacion:{lvl:'Cascada · proyección espacial', cls:'l-navegacion', t:'Cascada de Navegación',
+    d:'El menú <b>es</b> el flujo: una cola por estado, en orden. El descenso es el recorrido. Dice <b>dónde está el trabajo</b>.',
+    ex:'Gateada por estado: cada objeto aparece en la cola de su estado.'},
+  cola:{lvl:'Navegación', cls:'l-navegacion', t:'Cola',
+    d:'Una vista filtrada a <b>un estado</b>, scopeada al usuario. «Lo que tengo que hacer en esta etapa», no la tabla cruda. Lleva badge de conteo.',
+    ex:'Roles = colas de trabajo, no jerarquía.'},
+  subcola:{lvl:'Navegación · nivel de fase', cls:'l-navegacion', t:'Sub-cola (tab)',
+    d:'Una cola <b>dentro de una fase</b>. Las fases con sub-estructura se despliegan en una <b>mini-cascada de tabs</b> por sub-estado.',
+    ex:'No todas: una fase simple es una sola cola sin tabs.'},
+  panoramica:{lvl:'Navegación · cierre', cls:'l-navegacion', t:'Panorámica / Vista general',
+    d:'El kanban <b>read-only</b>: foto de los objetos por estado. Cierra la cascada. Es <b>espejo, no control</b> (sin drag).',
+    ex:'Fractal: existe a nivel de pipeline (todos) y de fase (vista general de fase). Scope-relative.'},
+  resultados:{lvl:'Cascada · proyección interactiva', cls:'l-resultados', t:'Cascada de Resultados',
+    d:'Ocurre <b>dentro de una acción</b> y converge hacia el resultado. Dice <b>cómo</b> haces avanzar el trabajo. Gateada por la respuesta anterior.',
+    ex:'Se llama «de Resultados», no «de Acciones»: la acción es el recipiente, el resultado el destino.'},
+  accion:{lvl:'Resultados', cls:'l-resultados', t:'Acción',
+    d:'La <b>única operación gateada</b> disponible en un estado: «la acción que toca». Es el recipiente de la Cascada de Resultados.',
+    ex:'Una superficie de acción única (la ficha), con la acción gateada por el estado.'},
+  resultado:{lvl:'Resultados · la bisagra', cls:'l-resultados', t:'Resultado',
+    d:'La respuesta terminal de la cascada y el <b>input de la transición</b>. Es la bisagra: <b>output de una cascada, combustible de la otra</b>.',
+    ex:'Tipos: avance · encadenado · terminal (exige motivo) · aparcado/largo plazo.'},
+  transicion:{lvl:'Resultados', cls:'l-resultados', t:'Transición + efecto colateral',
+    d:'El mapa determinista <b>(estado, resultado) → estado nuevo</b>, más lo que dispara además: auto-crear hijo, fijar fecha, crear pago.',
+    ex:'El objeto «se mueve por acciones»: cada salto es la consecuencia de un resultado.'},
+  hub:{lvl:'Navegación · 4 superficies', cls:'l-navegacion', t:'Hub (Mi día)',
+    d:'Cola de colas transversal. Responde «<b>qué me reclama ahora</b>», venga de la fase que venga.',
+    ex:'Operativo, no analítico.'},
+  dashboard:{lvl:'Navegación · 4 superficies', cls:'l-roles', t:'Dashboard',
+    d:'KPIs <b>agregados</b> (registro analítico). Distinto de la panorámica, que es operativa y a nivel de objeto.',
+    ex:'En JD: los 8 paneles de la zona CEO.'},
+  zona:{lvl:'Roles', cls:'l-roles', t:'Zona',
+    d:'El conjunto de superficies que abre un rol, con su <b>scope intrínseco</b> (row-level).',
+    ex:'Operador ve sus objetos; CEO, todo; Admin, gobierno.'},
+  rol:{lvl:'Roles · componibles', cls:'l-roles', t:'Rol',
+    d:'La llave de una zona (1:1). <b>Un usuario puede tener varios roles → ve la unión de zonas.</b> Sin herencia.',
+    ex:'Ver ≠ actuar: el CEO ya ve todo; solo se le añade Operador si va a actuar como uno.'},
+};
+// orden y agrupación del mapa
+const MAP_ORDER = ['flujo','cascada','pipeline','navegacion','cola','subcola','panoramica','resultados','accion','resultado','transicion','hub','dashboard','zona','rol'];
+
+const ROLE_NOTES = {
+  operador:'<b>Operador</b> — zona operativa scopeada a <b>sus</b> objetos + la bandeja sin asignar. Trabaja: toma casos, ejecuta acciones, registra resultados.',
+  manager:'<b>Manager / Supervisor</b> — ve el operativo de <b>su equipo</b>. <i>(Nombre y poderes —solo lectura vs. reasignar— por cerrar con Álvaro.)</i>',
+  ceo:'<b>CEO / Director</b> — su zona ya es <b>global</b>: panorámica de todo + dashboard. <b>No necesita la zona Operador para ver.</b> Solo se le añade el rol Operador si va a <b>actuar</b> como uno.',
+  admin:'<b>Admin</b> — zona de <b>gobierno</b>: usuarios, configuración, schema. No está «por encima» del CEO: es otra zona componible, en otro eje.',
+};
+
+/* ============================================================
+   TOUR — pasos del recorrido guiado
+   ============================================================ */
+const STEPS = [
+  {title:'1 · El principio: flujo cerrado',
+   text:'El usuario registra hechos; el sistema deriva el estado. Nada se arrastra a mano. Todo lo que sigue es consecuencia de esta única regla.',
+   run:()=>{clearHL();hl('#principle');showDef('flujo');}},
+  {title:'2 · La estructura: cascada gateada',
+   text:'El flujo cerrado se materializa en cascadas: secuencias donde cada paso espera su trigger. Y es recursiva — la verás repetirse a dos escalas.',
+   run:()=>{clearHL();hl('#principle');showDef('cascada');}},
+  {title:'3 · Proyección espacial: la Cascada de Navegación',
+   text:'El menú ES el flujo: una cola por estado, en orden. Cada caso vive en la cola de su estado. Esto te dice DÓNDE está el trabajo.',
+   run:()=>{clearHL();qa('.cola').forEach(c=>c.classList.add('hl'));showDef('navegacion');}},
+  {title:'4 · La acción que toca',
+   text:'En cada estado hay una sola acción disponible, gateada por la etapa. Abramos un caso para verla.',
+   run:()=>{clearHL();hlCola('f1');showDef('accion');}},
+  {title:'5 · Proyección interactiva: la Cascada de Resultados',
+   text:'La acción abre una cascada que converge hacia un RESULTADO. El operario describe qué pasó; no elige el estado.',
+   run:()=>{clearHL();hlCola('f1');openCardFor('f1');showDef('resultados');}},
+  {title:'6 · El resultado mueve el objeto',
+   text:'El resultado es la bisagra: dispara la transición y el objeto salta de cola. Por eso «el objeto se mueve por acciones». Mira a Ana pasar a Contacto.',
+   run:()=>{closeCard();clearHL();hlCola('f2');showDef('resultado');demoMove('Ana','f1','f2');}},
+  {title:'7 · La fase es fractal',
+   text:'Algunas fases —no todas— se despliegan por dentro en su propia mini-cascada de sub-colas (tabs) que termina en una vista general de fase. La misma forma, un nivel abajo.',
+   run:()=>{clearHL();hlCola('f3');openZoom();showDef('subcola');}},
+  {title:'8 · La panorámica cierra la cascada',
+   text:'Al final, una sola ventana con todos los objetos por estado. Es una foto read-only, no un mando: editar ahí rompería el flujo cerrado. Y es fractal (también por fase).',
+   run:()=>{closeZoom();clearHL();hlCola('panorama');showDef('panoramica');}},
+  {title:'9 · Roles y zonas componibles',
+   text:'Cada rol abre una zona con su propio alcance. Un usuario acumula roles. Clave: ver ≠ actuar. Prueba a cambiar de rol abajo.',
+   run:()=>{clearHL();qa('.role').forEach(r=>r.classList.add('hl'));showDef('rol');setRole('ceo');}},
+];
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+const $=s=>document.querySelector(s);
+const qa=s=>Array.from(document.querySelectorAll(s));
+let currentRole='operador';
+
+function renderFlow(){
+  const flow=$('#flow'); flow.innerHTML='';
+  COLAS.forEach((c,i)=>{
+    const el=document.createElement('div');
+    el.className='cola'+(c.id==='bandeja'?' bandeja':'');
+    el.id='cola-'+c.id;
+    el.innerHTML=`<h4>${c.name}<span class="badge">${c.objs.length}</span></h4>`+
+      (c.tabs?`<span class="tabsflag" data-zoom="1">▦ con tabs · zoom</span>`:'')+
+      `<div class="objs" id="objs-${c.id}"></div>`;
+    flow.appendChild(el);
+    if(i<COLAS.length-1){const a=document.createElement('div');a.className='arrow';a.textContent='→';flow.appendChild(a);}
+  });
+  // panorámica al final
+  const a=document.createElement('div');a.className='arrow';a.textContent='⇒';flow.appendChild(a);
+  const pan=document.createElement('div');pan.className='cola panorama';pan.id='cola-panorama';
+  pan.innerHTML=`<h4>▦ Panorámica<span class="badge">${COLAS.reduce((s,c)=>s+c.objs.length,0)}</span></h4>
+    <div class="empty">Foto read-only de todos los objetos por estado · espejo, no control</div>`;
+  flow.appendChild(pan);
+  COLAS.forEach(renderObjs);
+}
+function renderObjs(c){
+  const box=$('#objs-'+c.id); if(!box)return; box.innerHTML='';
+  if(!c.objs.length){box.innerHTML='<div class="empty">vacío</div>';return;}
+  c.objs.forEach(o=>{
+    const chip=document.createElement('button');
+    chip.className='chip'+(o.mine?' mine':'');
+    chip.innerHTML=`<span class="av">${o.n[0]}</span>${o.n}`;
+    chip.onclick=()=>openCardFor(c.id,o.n);
+    box.appendChild(chip);
+  });
+}
+function renderMap(){
+  const map=$('#map'); map.innerHTML='';
+  MAP_ORDER.forEach(id=>{
+    const n=NODES[id]; const el=document.createElement('button');
+    el.className='node '+n.cls; el.dataset.node=id;
+    el.innerHTML=`<div class="lvl">${n.lvl}</div><h4>${n.t}</h4>`;
+    el.onclick=()=>{showDef(id);el.scrollIntoView({block:'nearest',behavior:'smooth'});};
+    map.appendChild(el);
+  });
+}
+function renderZoom(){
+  const z=$('#zflow'); z.innerHTML='';
+  SUBCOLAS.forEach((s,i)=>{
+    const el=document.createElement('div');
+    el.className='subcola'+(s.vista?' vista':'');
+    el.innerHTML=`<h5>${s.name}</h5>`+(s.objs.length?s.objs.map(o=>`<div class="chip mine"><span class="av">${o[0]}</span>${o}</div>`).join(''):'<div class="empty">vacío</div>');
+    z.appendChild(el);
+    if(i<SUBCOLAS.length-1){const a=document.createElement('div');a.className='arrow';a.textContent=s.vista?'':'→';z.appendChild(a);}
+  });
+}
+
+/* ============================================================
+   INTERACTION
+   ============================================================ */
+function showDef(id){
+  const n=NODES[id]; if(!n)return;
+  $('#defpanel').classList.remove('placeholder');
+  $('#defLvl').textContent=n.lvl;
+  $('#defTitle').textContent=n.t;
+  $('#defText').innerHTML=n.d;
+  $('#defEx').innerHTML=n.ex?`<b>Nota.</b> ${n.ex}`:'';
+  qa('.node').forEach(x=>x.classList.toggle('active',x.dataset.node===id));
+}
+function hl(sel){const e=$(sel);if(e)e.classList.add('hl');}
+function hlCola(id){const e=$('#cola-'+id);if(e)e.classList.add('hl');}
+function clearHL(){qa('.hl').forEach(e=>e.classList.remove('hl'));}
+
+// action card
+let cardCtx=null;
+function openCardFor(colaId,objName){
+  const a=ACTIONS[colaId]; if(!a)return;
+  const cola=COLAS.find(c=>c.id===colaId);
+  const who=objName||(cola&&cola.objs[0]&&cola.objs[0].n)||'el caso';
+  cardCtx={colaId,objName:who};
+  $('#cardAction').textContent='⚡ '+a.action;
+  $('#cardWho').textContent='Caso: '+who+' · estado actual: '+(cola?cola.name:'');
+  $('#cardQ').innerHTML='Cascada: <b>'+a.q+'</b>';
+  const opts=$('#cardOpts'); opts.innerHTML='';
+  a.opts.forEach(o=>{
+    const b=document.createElement('button'); b.className='opt';
+    b.innerHTML=`<span class="k ${o.k}">${o.kl}</span>${o.t}`;
+    b.onclick=()=>chooseResult(colaId,who,o);
+    opts.appendChild(b);
+  });
+  $('#scrim').classList.add('on'); $('#card').classList.add('on');
+}
+function closeCard(){$('#scrim').classList.remove('on');$('#card').classList.remove('on');}
+function chooseResult(colaId,objName,o){
+  closeCard();
+  if(o.to){demoMove(objName,colaId,o.to);}
+  else{
+    // terminal / aparcado: el objeto sale del flujo
+    const cola=COLAS.find(c=>c.id===colaId);
+    const i=cola.objs.findIndex(x=>x.n===objName);
+    if(i>=0){cola.objs.splice(i,1);renderObjs(cola);updateBadges();}
+    flashDef(o.kl==='terminal'?'resultado':'resultado');
+  }
+}
+function demoMove(objName,fromId,toId){
+  const from=COLAS.find(c=>c.id===fromId), to=COLAS.find(c=>c.id===toId);
+  if(!from||!to)return;
+  let obj=from.objs.find(x=>x.n===objName);
+  if(fromId===toId){ // encadenado: se queda, pequeño rebote
+    const chip=Array.from($('#objs-'+fromId).children).find(c=>c.textContent.includes(objName));
+    if(chip){chip.classList.add('moving');setTimeout(()=>chip.classList.remove('moving'),700);}
+    return;
+  }
+  if(!obj){obj={n:objName,mine:true};}
+  else{from.objs=from.objs.filter(x=>x.n!==objName);}
+  renderObjs(from);
+  to.objs.push(obj); renderObjs(to);
+  updateBadges();
+  // animar entrada
+  const newChip=Array.from($('#objs-'+toId).children).find(c=>c.textContent.includes(objName));
+  if(newChip){newChip.classList.add('enter');setTimeout(()=>newChip.classList.remove('enter'),600);}
+  hlCola(toId);
+}
+function updateBadges(){
+  COLAS.forEach(c=>{const b=$('#cola-'+c.id)?.querySelector('.badge');if(b)b.textContent=c.objs.length;});
+  const pb=$('#cola-panorama')?.querySelector('.badge');if(pb)pb.textContent=COLAS.reduce((s,c)=>s+c.objs.length,0);
+}
+function flashDef(id){showDef(id);}
+
+// zoom (fractal)
+function openZoom(){renderZoom();$('#zoom').classList.add('on');$('#zoom').scrollIntoView({block:'nearest',behavior:'smooth'});}
+function closeZoom(){$('#zoom').classList.remove('on');}
+
+// roles
+function setRole(r){
+  currentRole=r;
+  qa('.role').forEach(b=>b.classList.toggle('active',b.dataset.role===r));
+  $('#zonenote').innerHTML=ROLE_NOTES[r]||'';
+}
+
+/* ============================================================
+   TOUR CONTROLLER
+   ============================================================ */
+let tourIdx=-1;
+function applyStep(i){
+  tourIdx=i; const s=STEPS[i];
+  $('#narration').classList.add('on');
+  $('#narrTitle').textContent=s.title;
+  $('#narrText').textContent=s.text;
+  $('#stepCount').textContent=`Paso ${i+1} / ${STEPS.length}`;
+  $('#progBar').style.width=((i+1)/STEPS.length*100)+'%';
+  $('#prevBtn').disabled=i===0;
+  $('#nextBtn').disabled=i===STEPS.length-1;
+  try{s.run();}catch(e){console.warn(e);}
+  $('#stage').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function startTour(){ resetModel(); applyStep(0); }
+function resetModel(){
+  // restaurar objetos a estado inicial
+  COLAS[0].objs=[{n:'Diego',mine:false},{n:'Elena',mine:false}];
+  COLAS[1].objs=[{n:'Ana',mine:true}];
+  COLAS[2].objs=[{n:'Bruno',mine:true}];
+  COLAS[3].objs=[{n:'Carla',mine:true}];
+  COLAS[4].objs=[];
+  renderFlow(); closeZoom(); closeCard(); clearHL();
+}
+
+/* ============================================================
+   WIRE-UP
+   ============================================================ */
+document.addEventListener('click',e=>{
+  const nb=e.target.closest('[data-node]');
+  if(nb){showDef(nb.dataset.node);}
+  if(e.target.closest('[data-zoom]')){hlCola('f3');openZoom();showDef('subcola');}
+  const role=e.target.closest('.role');
+  if(role){setRole(role.dataset.role);}
+});
+$('#tourBtn').onclick=startTour;
+$('#nextBtn').onclick=()=>{if(tourIdx<STEPS.length-1)applyStep(tourIdx+1);};
+$('#prevBtn').onclick=()=>{if(tourIdx>0)applyStep(tourIdx-1);};
+$('#cardX').onclick=closeCard;
+$('#scrim').onclick=closeCard;
+$('#zoomX').onclick=closeZoom;
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeCard();closeZoom();}
+  if(tourIdx>=0){if(e.key==='ArrowRight'&&tourIdx<STEPS.length-1)applyStep(tourIdx+1);
+                 if(e.key==='ArrowLeft'&&tourIdx>0)applyStep(tourIdx-1);}
+});
+
+// init
+renderFlow(); renderMap(); setRole('operador');
+</script>
+</body>
+</html>
