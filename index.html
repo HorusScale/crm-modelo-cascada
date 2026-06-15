@@ -263,8 +263,8 @@
           <div class="roles">
             <span class="rl">Zonas por rol:</span>
             <button class="role active" data-role="operador">Operador</button>
-            <button class="role" data-role="manager">Manager / Supervisor</button>
-            <button class="role" data-role="ceo">CEO / Director</button>
+            <button class="role" data-role="manager">Manager</button>
+            <button class="role" data-role="ceo">CEO / Dirección</button>
             <button class="role" data-role="admin">Admin</button>
           </div>
           <div class="zonenote" id="zonenote"></div>
@@ -296,7 +296,7 @@
 
   <footer>
     <b>Horus Scale</b> · Modelo agnóstico de herramienta (Airtable+Noloco · Directus+Nuxt) · caso aplicado: CRM de exportación JD Emirates.<br>
-    Pendiente de cerrar con Álvaro: nombre y poderes del tier <i>Manager / Supervisor</i>.
+    Roles cerrados con Álvaro (15/06): Operador · Manager (equipo + fallback) · CEO/Dirección · Admin (singleton).
   </footer>
 
 </div>
@@ -339,7 +339,7 @@ const ACTIONS = {
       {k:'av',kl:'avance',t:'Sí, cualifica → Contrato y señal',to:'f2'},
       {k:'enc',kl:'encadenado',t:'No contesta → crea seguimiento',to:'f1'},
       {k:'term',kl:'terminal',t:'No cualifica → descartar (exige motivo)',to:null},
-      {k:'park',kl:'aparcado',t:'Más adelante → largo plazo',to:null},
+      {k:'enc',kl:'encadenado',t:'Más adelante → seguimiento (largo plazo)',to:'f1'},
     ]},
   f2:{action:'Generar contrato + cobrar señal', q:'¿Contrato firmado y señal cobrada? (gate)',
     opts:[
@@ -351,7 +351,7 @@ const ACTIONS = {
     opts:[
       {k:'av',kl:'avance',t:'Aprueba → Aprobación y compra',to:'f4'},
       {k:'enc',kl:'encadenado',t:'Pide más opciones → seguir buscando',to:'f3'},
-      {k:'park',kl:'aparcado',t:'Nada le encaja → largo plazo',to:null},
+      {k:'enc',kl:'encadenado',t:'Nada le encaja → seguimiento (largo plazo)',to:'f3'},
     ]},
   f4:{action:'Cerrar la compra', q:'¿Resultado de la compra?',
     opts:[
@@ -409,7 +409,7 @@ const NODES = {
     ex:'Una superficie de acción única (la ficha), con la acción gateada por la fase.'},
   resultado:{lvl:'Resultados · la bisagra', cls:'l-resultados', t:'Resultado',
     d:'La respuesta terminal de la cascada y el <b>input de la transición</b>. Es la bisagra: <b>output de una cascada, combustible de la otra</b>.',
-    ex:'Tipos: avance · encadenado · terminal (exige motivo) · aparcado/largo plazo. Ej. JD: «subasta perdida» encadena de vuelta a Sourcing.'},
+    ex:'Tipos: avance · encadenado · terminal (exige motivo). El largo plazo es un encadenado (Seguimiento con fecha). Ej. JD: «subasta perdida» encadena de vuelta a Sourcing.'},
   transicion:{lvl:'Resultados', cls:'l-resultados', t:'Transición + efecto colateral',
     d:'El mapa determinista <b>(fase, resultado) → fase nueva</b>, más lo que dispara además: generar contrato, fijar fecha, crear pago, carta ceremonial.',
     ex:'La operación «se mueve por acciones»: cada salto es la consecuencia de un resultado.'},
@@ -429,9 +429,9 @@ const NODES = {
 const MAP_ORDER = ['flujo','cascada','pipeline','navegacion','cola','subcola','panoramica','resultados','accion','resultado','transicion','hub','dashboard','zona','rol'];
 const ROLE_NOTES = {
   operador:'<b>Operador</b> — zona operativa scopeada a <b>sus</b> operaciones + la bandeja sin asignar. Trabaja: toma casos, ejecuta acciones, registra resultados.',
-  manager:'<b>Manager / Supervisor</b> — ve el operativo de <b>su equipo</b>. <i>(Nombre y poderes —solo lectura vs. reasignar— por cerrar con Álvaro.)</i>',
-  ceo:'<b>CEO / Director</b> — su zona ya es <b>global</b>: panorámica de todo + dashboard. <b>No necesita la zona Operador para ver.</b> Solo se le añade el rol Operador si va a <b>actuar</b> como uno.',
-  admin:'<b>Admin</b> — zona de <b>gobierno</b>: usuarios, configuración, schema. No está «por encima» del CEO: es otra zona componible, en otro eje.',
+  manager:'<b>Manager</b> — gestiona un <b>equipo de operadores</b>. Poder exclusivo: <b>fallback / regresión</b> (revertir acciones mal hechas por un operador). Multi-equipo = fase 2.',
+  ceo:'<b>CEO / Dirección</b> — su zona ya es <b>global</b>: panorámica de todo + dashboard. <b>No necesita la zona Operador para ver.</b> Solo se le añade el rol Operador si va a <b>actuar</b> como uno.',
+  admin:'<b>Admin</b> — zona de <b>gobierno</b>: usuarios, config, formularios, alertas, presupuesto. <b>Singleton</b> (solo uno, por auditoría) y el CEO no debe ser admin. No está «por encima» del CEO: otro eje.',
 };
 
 /* ============================================================ TOUR */
