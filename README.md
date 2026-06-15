@@ -21,7 +21,7 @@ explicar el modelo a una sola voz, sin glosario denso.
 > Flujo cerrado → **cascada gateada** (recursiva) → { Navegación: colas → panorámica · Resultados: acción → resultado → transición } → 4 superficies de navegación → roles/zonas componibles.
 
 La fuente canónica del vocabulario vive en el vault de Horus
-(`03 Conocimiento/Patrones de construcción de CRMs comerciales.md`).
+(`03 Conocimiento/Horus CRM Build Framework.md`).
 
 ## Técnico
 
